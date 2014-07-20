@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Event Handling</title>
+  <!--
+    using jquery here as an example to show how a bigger site would
+    handle this. For the simple example, we certainly don't need
+    jquery
+  -->
+  <script src="/jquery.min.js"></script>
+  <style type="text/css">
+    #events {
+        border: 1px solid #6f6f6f;
+        height: 100px;
+        overflow: auto;
+        padding: 15px 40px 15px 40px;
+        list-style-type: none;
+    }
+    #events li:before {
+        display: inline-block;
+        width: 2em;
+        text-align: center;
+        content: "🐄";
+    }
+  </style>
+</head>
+<body>
+<h1>Event Handling</h1>
+<ul id="events">
+</ul>
+
+<script src="/server-events.js"></script>
+<script>
+    (function(){
+        var channel = new EventChannel();
+        var log = $('#events');
+        $(channel).bind('cheese_created', function(e){
+            console.log(e.pieces + ' pieces of ' + e.cheese_type);
+            log.prepend($('<li>').text(e.pieces + ' pieces of ' + e.cheese_type));
+        })
+    })();
+</script>
+</body>
+</html>
