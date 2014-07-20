@@ -14,7 +14,8 @@ var cheese_types = ['Emmentaler', 'Appenzeller', 'Gruyère',
 function create_cheese(){
     return {
       pieces: Math.floor(Math.random() * 115) + 5,
-      type: cheese_types[Math.floor(Math.random()*cheese_types.length)]
+      cheese_type:
+        cheese_types[Math.floor(Math.random()*cheese_types.length)]
     }
 }
 
@@ -24,14 +25,15 @@ publish(cheese_delivery);
 
 
 
-function publish(cheese_event){
+function publish(cheese_delivery){
+  var cheese_event = {type: 'cheese_created', data: cheese_delivery};
   query(
     "insert into events (channel_id, data) values ($1, $2)",
     ['cheese', JSON.stringify(cheese_event)],
     function(err, rows){
       redis_publish('cheese', cheese_event, function(err, res){
         console.log(
-          "Created " + cheese_delivery.pieces + " pieces of " + cheese_delivery.type
+          "Created " + cheese_delivery.pieces + " pieces of " + cheese_delivery.cheese_type
         );
       })
     }
