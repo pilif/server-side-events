@@ -7,7 +7,6 @@ var wss = new WebSocketServer({port: 8080});
 wss.on('connection', function(ws) {
   var client = redis.createClient(6379, 'localhost');
   ws.on('close', function(){
-    console.log("disconnecting");
     client.end();
   });
   client.select(2, function(err, result){
@@ -17,7 +16,6 @@ wss.on('connection', function(ws) {
     }
     client.subscribe('channels:cheese');
     client.on('message', function(chn, message){
-      console.log("Got "+message+ " on " + chn);
       ws.send(message);
     });
   })

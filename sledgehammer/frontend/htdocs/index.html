@@ -35,7 +35,6 @@
         var channel = new EventChannel();
         var log = $('#events');
         $(channel).bind('cheese_created', function(e){
-            console.log(e.pieces + ' pieces of ' + e.cheese_type);
             log.prepend($('<li>').text(e.pieces + ' pieces of ' + e.cheese_type));
         })
     })();
