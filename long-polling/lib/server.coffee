@@ -10,9 +10,7 @@ redis = require 'redis'
 pg = require("pg").native
 pg.defaults.poolSize = 5
 
-ok = (res, headers)->
-  for own k, v of headers
-    res.setHeader k, v
+ok = (res)->
   res.writeHead 200
 
 notfound = (res)->
@@ -72,29 +70,49 @@ handler = (channel, last_event_id, cb)->
     else
       events_since_id(channel, last_event_id, cb)
 
-write_long_poll = (response, events, add_headers)->
+write_long_poll = (response, events, blocking)->
   unless response.headersSent
     response.setHeader 'Content-Type', 'application/json'
-    ok response, add_headers
-  response.end JSON.stringify events
-  false
 
-write_eventsource = (response, events, add_headers)->
+    response.setHeader 'x-shortpoll-info', if blocking then 'true' else 'false'
+    response.setHeader 'x-ps-reconnect-in', if blocking then 0 else 5
+    ok response
+
+  response.end JSON.stringify events
+  true
+
+write_eventsource = (response, events, blocking)->
   unless response.headersSent
     response.setHeader 'Content-Type', 'text/event-stream'
-    ok response, add_headers
+    ok response
 
   for event in events
     response.write ["event: "+event.data.type,
       "data: " + JSON.stringify(event.data.data),
       "id: " + event.id,
+      "retry:" + if blocking then 0 else 5000,
       "", ""].join "\n"
-
-  true
+  false
 
 waiting_channels = {}
 listen_port = cfg.listen_port ? 9984
 listen_address = cfg.listen_address ? '120.0.0.1'
+redis_connections = {}
+
+subscribe = (channel, cb)->
+  if not redis_connections[channel]
+    c = redis.createClient 6379, cfg['redis-server'] || 'localhost'
+    redis_connections[channel] = c
+    c.select cfg['db'] || 2, (err, r)->
+      c.subscribe 'channels:'+channel
+      c.on 'close', ()->
+        delete redis_connection[c]
+      c.once "message", (chn, message)->
+        cb(message)
+  else
+    c = redis_connections[channel]
+    c.once "message", (chn, message)->
+      cb(message)
 
 exports.run = ->
   http.createServer((req, res)->
@@ -120,44 +138,26 @@ exports.run = ->
     req.on 'close', ->
       clear_waiting()
 
-    close_redis = (client)->
-      client.close()
-
-
     handle_request = ()->
-
       handler channel, last_event_id, (err, evts)->
-
         return http_error res, 500, 'Failed to get event data: ' + err if err
 
         last_event_id = evts[evts.length-1].id if (evts and evts.length > 0)
-
         if waiting() or (evts and evts.length > 0)
-          return unless write(res, evts,
-            'x-shortpoll-info': 'true'
-            'x-ps-reconnect-in': if waiting() then 5 else 0)
+          abort_processing = write(res, evts, not waiting());
+          if abort_processing or waiting()
+            res.end()
+            return
 
-        c = redis.createClient 6379, cfg['redis-server'] || 'localhost'
-        close_redis = ()-> c.end()
-
-        req.on 'close', close_redis
-
-        c.select cfg['db'] || 2, (err, r)->
-          set_waiting()
-          c.subscribe 'channels:'+channel
-          c.on "message", (chn, message)->
-            handler channel, last_event_id, (err, evts)->
-              c.end()
-              req.removeListener 'close', close_redis
-              return http_error 500, 'Failed to get event data' if err
-
-              continue_listening = write res, evts,
-                'x-shortpoll-info': 'false'
-                'x-ps-reconnect-in': 0
-              return clear_waiting() unless continue_listening
-              last_event_id = evts[evts.length-1].id if (evts and evts.length > 0)
-              process.nextTick ()->
-                handle_request()
+        set_waiting()
+        subscribe channel, (message)->
+          handler channel, last_event_id, (err, evts)->
+            return http_error 500, 'Failed to get event data' if err
+            abort_processing = write res, evts, true
+            return clear_waiting() if abort_processing
+            last_event_id = evts[evts.length-1].id if (evts and evts.length > 0)
+            process.nextTick ()->
+              handle_request()
     handle_request()
   ).listen listen_port, listen_address
 
