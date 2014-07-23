@@ -4,14 +4,12 @@ var serveStatic = require('serve-static');
 var httpProxy = require('http-proxy');
 var finalhandler = require('finalhandler')
 
-// Serve up public/ftp folder
 var serve = serveStatic('htdocs', {'index': ['index.html']});
 
 var proxy = httpProxy.createProxyServer({
     target: 'http://localhost:9984'
 });
 
-// Create server
 var server = http.createServer(function(req, res){
   if (req.url.match(/^\/events/)){
     req.url = req.url.substr(7);
