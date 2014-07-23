@@ -37,9 +37,14 @@
 <ul id="long-polling">
 </ul>
 
+<h2>Server-Sent-Events</h2>
+<ul id="eventsource">
+</ul>
+
 <script src="/underscore-min.js"></script>
 <script src="/web-sockets.js"></script>
 <script src="/long-polling.js"></script>
+
 <script>
     (function(){
         var channel_ws = new EventChannelWs();
@@ -58,7 +63,18 @@
         $(channel_lp).bind('cheese_created', function(e, data){
             log_lp.prepend($('<li>').text(data.pieces + ' pieces of ' + data.cheese_type));
         });
-
+        var url = [
+            '/events/cheese',
+            '/?last_event_id=rt-',
+            ""+(new Date).getTime() / 1000,
+            '&flavor=eventsource'
+        ].join('');
+        var cheese_channel = new EventSource(url);
+        var log_source = $('#eventsource');
+        cheese_channel.addEventListener('cheese_created', function(e){
+            var data = JSON.parse(e.data);
+            log_source.prepend($('<li>').text(data.pieces + ' pieces of ' + data.cheese_type));
+        })
     })();
 </script>
 </body>
