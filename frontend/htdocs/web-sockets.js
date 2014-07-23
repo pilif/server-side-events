@@ -1,5 +1,5 @@
 (function(window){
-    window.EventChannel = function(){
+    window.EventChannelWs = function(){
         var socket = new WebSocket("ws://localhost:8080/");
         var self = this;
         socket.onmessage = function(evt){

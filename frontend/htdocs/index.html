@@ -29,10 +29,10 @@
 <ul id="events">
 </ul>
 
-<script src="/server-events.js"></script>
+<script src="/web-sockets.js"></script>
 <script>
     (function(){
-        var channel = new EventChannel();
+        var channel = new EventChannelWs();
         var log = $('#events');
         $(channel).bind('cheese_created', function(e){
             log.prepend($('<li>').text(e.pieces + ' pieces of ' + e.cheese_type));
