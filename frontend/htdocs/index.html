@@ -9,14 +9,16 @@
   -->
   <script src="/jquery.min.js"></script>
   <style type="text/css">
-    #events {
+
+    ul {
         border: 1px solid #6f6f6f;
         height: 100px;
         overflow: auto;
         padding: 15px 40px 15px 40px;
         list-style-type: none;
+        margin-bottom: 50px;
     }
-    #events li:before {
+    ul li:before {
         display: inline-block;
         width: 2em;
         text-align: center;
@@ -26,17 +28,37 @@
 </head>
 <body>
 <h1>Event Handling</h1>
-<ul id="events">
+
+<h2>Web Sockets</h2>
+<ul id="websockets">
 </ul>
 
+<h2>Long Polling</h2>
+<ul id="long-polling">
+</ul>
+
+<script src="/underscore-min.js"></script>
 <script src="/web-sockets.js"></script>
+<script src="/long-polling.js"></script>
 <script>
     (function(){
-        var channel = new EventChannelWs();
-        var log = $('#events');
-        $(channel).bind('cheese_created', function(e){
-            log.prepend($('<li>').text(e.pieces + ' pieces of ' + e.cheese_type));
-        })
+        var channel_ws = new EventChannelWs();
+        var log_ws = $('#websockets');
+        $(channel_ws).bind('cheese_created', function(e){
+            log_ws.prepend($('<li>').text(e.pieces + ' pieces of ' + e.cheese_type));
+        });
+
+        var channel_lp = new EventChannelLongPoll(
+          'cheese',
+          (new Date).getTime() / 1000, // good enough
+          'foobar'
+        );
+        var log_lp = $('#long-polling');
+        channel_lp.setEnabled(true);
+        $(channel_lp).bind('cheese_created', function(e, data){
+            log_lp.prepend($('<li>').text(data.pieces + ' pieces of ' + data.cheese_type));
+        });
+
     })();
 </script>
 </body>
