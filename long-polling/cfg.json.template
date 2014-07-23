@@ -1,0 +1,7 @@
+{
+    "redis-server": "localhost",
+    "db": 2,
+    "psql-access-string": "tcp://pilif@localhost/cheese",
+    "listen_port": 9984,
+    "listen_address": "127.0.0.1"
+}

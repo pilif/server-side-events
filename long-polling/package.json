@@ -1,0 +1,20 @@
+{
+  "author": "sensational ag",
+  "name": "event-forwarder",
+  "description": "popscan event forwarder",
+  "version": "0.0.2",
+  "engines": {
+    "node": ">=0.6.0"
+  },
+  "dependencies": {
+    "redis": ">=0.7.0",
+    "pg": ">=0.6.10",
+    "coffee-script": ">=1.2.0"
+  },
+  "optionalDependencies": {
+    "hiredis": ">=0.1.13"
+  },
+  "bin": {
+    "event-forwarder": "./bin/event-forwarder.js"
+  }
+}
