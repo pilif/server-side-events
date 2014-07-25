@@ -63,7 +63,7 @@ events_since_time = (channel, ts, cb)->
   query q, [channel, ts], cb
 
 
-handler = (channel, last_event_id, cb)->
+fetch_events = (channel, last_event_id, cb)->
     if last_event_id.substr(0, 3) == 'rt-'
       last_event_id = last_event_id.substr(3)
       events_since_time(channel, last_event_id, cb)
@@ -141,7 +141,7 @@ exports.run = ->
       clear_waiting()
 
     handle_subscription = (c, message)->
-      handler channel, last_event_id, (err, evts)->
+      fetch_events channel, last_event_id, (err, evts)->
         return http_error 500, 'Failed to get event data' if err
         abort_processing = write res, evts, true
         last_event_id = evts[evts.length-1].id if (evts and evts.length > 0)
@@ -150,7 +150,7 @@ exports.run = ->
           clear_waiting()
           res.end()
 
-    handler channel, last_event_id, (err, evts)->
+    fetch_events channel, last_event_id, (err, evts)->
       return http_error res, 500, 'Failed to get event data: ' + err if err
 
       last_event_id = evts[evts.length-1].id if (evts and evts.length > 0)
