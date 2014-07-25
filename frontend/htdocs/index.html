@@ -9,18 +9,34 @@
   -->
   <script src="/jquery.min.js"></script>
   <style type="text/css">
+    body {
+        font-family: Helvetiva, Arial, sans-serif;
+        font-size: 22pt;
+    }
+    div {
+        display: inline-block;
+        width: 14em;
+        padding: 15px 20px 15px 20px;
+    }
+    div h2 {
+        font-size: 1em;
+        margin-bottom: 12px;
+    }
 
     ul {
+        margin-top: 12px;
         border: 1px solid #6f6f6f;
-        height: 100px;
+        height: 150px;
         overflow: auto;
-        padding: 15px 40px 15px 40px;
         list-style-type: none;
-        margin-bottom: 50px;
+        padding: 0;
+    }
+    ul li {
+        line-height: 1.3em;
     }
     ul li:before {
         display: inline-block;
-        width: 2em;
+        width: 1.6em;
         text-align: center;
         content: "🐄";
     }
@@ -29,17 +45,23 @@
 <body>
 <h1>Event Handling</h1>
 
-<h2>Web Sockets</h2>
-<ul id="websockets">
-</ul>
+<div>
+    <h2>Web Sockets</h2>
+    <ul id="websockets">
+    </ul>
+</div>
 
-<h2>Long Polling</h2>
-<ul id="long-polling">
-</ul>
+<div>
+    <h2>Long Polling</h2>
+    <ul id="long-polling">
+    </ul>
+</div>
 
-<h2>Server-Sent-Events</h2>
-<ul id="eventsource">
-</ul>
+<div>
+    <h2>Server-Sent-Events</h2>
+    <ul id="eventsource">
+    </ul>
+</div>
 
 <script src="/underscore-min.js"></script>
 <script src="/web-sockets.js"></script>
