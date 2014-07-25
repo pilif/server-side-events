@@ -99,6 +99,10 @@ listen_port = cfg.listen_port ? 9984
 listen_address = cfg.listen_address ? '120.0.0.1'
 redis_connections = {}
 
+unsubscribe = (channel, cb)->
+  return if not redis_connections[channel]
+  redis_connections[channel].removeListener('message', cb)
+
 subscribe = (channel, cb)->
   if not redis_connections[channel]
     c = redis.createClient 6379, cfg['redis-server'] || 'localhost'
@@ -107,12 +111,10 @@ subscribe = (channel, cb)->
       c.subscribe 'channels:'+channel
       c.on 'close', ()->
         delete redis_connection[c]
-      c.once "message", (chn, message)->
-        cb(message)
+      c.on "message", cb
   else
     c = redis_connections[channel]
-    c.once "message", (chn, message)->
-      cb(message)
+    c.on "message", cb
 
 exports.run = ->
   http.createServer((req, res)->
@@ -138,27 +140,33 @@ exports.run = ->
     req.on 'close', ->
       clear_waiting()
 
-    handle_request = ()->
+    handle_subscription = (c, message)->
       handler channel, last_event_id, (err, evts)->
-        return http_error res, 500, 'Failed to get event data: ' + err if err
-
+        return http_error 500, 'Failed to get event data' if err
+        abort_processing = write res, evts, true
         last_event_id = evts[evts.length-1].id if (evts and evts.length > 0)
-        if waiting() or (evts and evts.length > 0)
-          abort_processing = write(res, evts, not waiting());
-          if abort_processing or waiting()
-            res.end()
-            return
+        if abort_processing
+          unsubscribe channel, handle_subscription
+          clear_waiting()
+          res.end()
 
-        set_waiting()
-        subscribe channel, (message)->
-          handler channel, last_event_id, (err, evts)->
-            return http_error 500, 'Failed to get event data' if err
-            abort_processing = write res, evts, true
-            return clear_waiting() if abort_processing
-            last_event_id = evts[evts.length-1].id if (evts and evts.length > 0)
-            process.nextTick ()->
-              handle_request()
-    handle_request()
+    handler channel, last_event_id, (err, evts)->
+      return http_error res, 500, 'Failed to get event data: ' + err if err
+
+      last_event_id = evts[evts.length-1].id if (evts and evts.length > 0)
+      if waiting() or (evts and evts.length > 0)
+        abort_processing = write(res, evts, not waiting());
+        if waiting() or abort_processing
+          unsubscribe channel, handle_subscription
+          res.end()
+          return true
+
+      set_waiting()
+      subscribe channel, handle_subscription
+      req.on "close", ->
+        unsubscribe channel, handle_subscription
+        clear_waiting()
+
   ).listen listen_port, listen_address
 
   console.log "Server running at http://#{listen_address}:#{listen_port}/"
